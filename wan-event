@@ -1,0 +1,17 @@
+#!/bin/sh
+
+#if [ "$2" == "connected" ];then
+if [ "$2" == "connecting" ]; then
+   # sleep 5
+   # No need for recommended 'sleep n' as ChkWAN.sh has default 10 secs delay
+   # Check WAN connectivity every 5 minutes
+   sh /jffs/scripts/ChkWAN.sh wan nowait quiet i=wan0 cron="\*/2 \* \* \* \*" &
+fi
+
+## RESTART DDNS if WAN is connected again as IP changes - Instead added cru a dynpatch "*/5 * * * * /usr/sbin/inadyn --once"
+if [ "$2" == "connected" ];then
+   echo -e $$ "Adding dynpatch inadyn to cru" | logger -st "($(basename $0))"
+   cru d dynpatch
+   cru a dynpatch "*/15 * * * * /usr/sbin/inadyn --once"
+   echo "$(cru l | grep dynpatch)" | logger -st "($(basename $0))"
+fi
