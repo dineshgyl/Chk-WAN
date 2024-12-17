@@ -513,8 +513,7 @@ while [ $FAIL_CNT -lt $MAX_FAIL_CNT ]; do
 						METHOD="using cURL data IP retrieval method"
 					fi
 				fi
-				Say $VER $TS $COUNT "Monitoring" $WAN_NAME $WAN_INDEX $DEV_TXT "connection using" $TXT "(Tries="$TRIES")" "(Action="$ACTION")"
-				Say $VER $TS $COUNT "Monitoring" $(($FAIL_CNT+1)) "out of" $TRIES $WAN_NAME $WAN_INDEX $DEV_TXT "connection" $METHOD "check FAILED"
+				Say $VER $TS $COUNT "Monitoring" $WAN_NAME $WAN_INDEX $DEV_TXT "connection" $METHOD "check FAILED"  $(($FAIL_CNT+1)) "out of" $TRIES "(Action="$ACTION")" "("$TXT")"
 				echo -e								# v1.14
 			fi
 		fi
