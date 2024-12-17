@@ -473,8 +473,8 @@ eval exec "$FD>$LOCKFILE"
 flock -n $FD || { Say "$VER Check WAN monitor ALREADY running...ABORTing"; exit; }		# v1.15
 
 #if [ "$QUIET" != "quiet" ];then
-# If count is divisible by 15, log the message
-if [ $((COUNT % 15)) -eq 0 ]; then
+# If count is divisible by 30, log the message
+if [ $((COUNT % 30)) -eq 0 ]; then
 	echo -e $cBMAG
 	sleep 1
 	echo -e $(date)" Check WAN Monitor started.....PID="$$ >> $LOCKFILE
