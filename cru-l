@@ -1,5 +1,5 @@
 asusadmin@RT-AX86U_Pro-3638:/jffs/scripts# cru l
-* * * * * /usr/sbin/inadyn --once #dynpatch#
+0 * * * * /usr/sbin/inadyn --once #dynpatch#
 */2 * * * * /etc/openvpn/server1/vpn-watchdog1.sh #CheckVPNServer1#
 */2 * * * * /jffs/scripts/ChkWAN.sh wan nowait quiet i=wan0   #WAN_Check#
 asusadmin@RT-AX86U_Pro-3638:/jffs/scripts#
