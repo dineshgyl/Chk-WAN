@@ -1,0 +1,28 @@
+#!/bin/sh
+
+/usr/bin/logger -s -t "($(basename $0))" $$ "Martineau $MYROUTER BOOT in progress... [$@]"
+
+MYROUTER=$(nvram get computer_name)
+HARDWARE_MODEL=$(nvram get productid)
+BUILDNO=$(nvram get buildno)
+EXTENDNO=$(nvram get extendno)
+
+
+# NOTE: Can't use Flash drive /tmp/mnt/$MYROUTER/ 'cos it hasn't been mounted yet :-(
+# 'flock' is probably a better solution rather than the 'echo' ;-)
+echo $$"-"`date` > /tmp/BOOTINPROGRESS
+
+# Should be sufficient to cover physical BOOT process?
+logger -st "($(basename $0))" $$ "Paused for 3 mins....."
+sleep 180
+
+# call custom scripts/commands e.g. cifs.sh / cru etc. here...
+
+# Move Syslog to USB Flash drive
+/jffs/scripts/syslog-move.sh
+
+rm /tmp/BOOTINPROGRESS
+
+/usr/bin/logger -st "($(basename $0))" $$ "Martineau" $MYROUTER "BOOT Completed Firmware build" $BUILDNO $EXTENDNO "[$@]"
+
+exit 0
