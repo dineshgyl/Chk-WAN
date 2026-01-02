@@ -1,5 +1,5 @@
 #!/bin/sh
-VER="v1.18"
+VER="v1.19"
 #============================================================================================ © 2016-2021 Martineau v1.18
 #
 # Monitor WAN connection state using PINGs to multiple hosts, or a single cURL 15 Byte data request and optionally a 10MB/500B WGET/CURL data transfer.
@@ -61,6 +61,11 @@ VER="v1.18"
 #      sh /jffs/scripts/ChkWAN.sh wan nowait cron="\*/2 \* \* \* \*" &
 
 
+#Bharat
+#  sh /jffs/scripts/ChkWAN.sh wan nowait quiet once  i=wan0 ping='5.5.5.5' noaction
+
+#  /jffs/scripts/ChkWAN.sh wan nowait quiet once  i=wan0 ping='8.8.8.8,1.1.1.1,9.9.9.9' noaction cron=\*/5
+#  /jffs/scripts/ChkWAN.sh wan nowait quiet once  i=wan0 ping='8.8.8.8,1.1.1.1,9.9.9.9' cron=\*/5
 
 
 # [URL="https://www.snbforums.com/threads/need-a-script-that-auto-reboot-if-internet-is-down.43819/#post-371791"]Need a script that auto reboot if internet is down[/URL]
@@ -68,10 +73,16 @@ VER="v1.18"
 TS=$(date "+%Y%m%d%H%M%S")
 # Define the counter file
 COUNTER_FILE="/tmp/$(basename $0).ctr"
+FAILTIMES_FILE="/tmp/$(basename $0).fail.times"
 
 # Check if counter file exists, if not, create it with value 0
 if [ ! -f "$COUNTER_FILE" ]; then
     echo 0 > "$COUNTER_FILE"
+fi
+
+# Check if FAILTIMES_FILE file exists, if not, create it with value 0
+if [ ! -f "$FAILTIMES_FILE" ]; then
+    echo 0 > "$FAILTIMES_FILE"
 fi
 
 # Read the current count
@@ -79,6 +90,9 @@ COUNT=$(cat "$COUNTER_FILE")
 
 # Increment the counter
 COUNT=$((COUNT + 1))
+
+# Read the current count
+FAILTIMESCOUNT=$(cat "$FAILTIMES_FILE")
 
 
 ShowHelp() {
@@ -432,6 +446,12 @@ if [ "$1" == "help" ] || [ "$1" == "-h" ];then
 	exit 0
 fi
 
+# Check uptime and halt execution if uptime is less than 5 minutes
+uptime_seconds=$(cut -d. -f1 /proc/uptime)
+if [ "$uptime_seconds" -lt 600 ]; then
+  Say  $VER $TS "ChkWAN Skipped run: uptime" ${uptime_seconds}"s (< 600s threshold)"
+  exit 0
+fi
 
 # No of times to check each host before trying next
 TRIES=3										# TRIES=3 With 5 hosts and PING ONLY usually recovery action is initiated within 01:30 minutes?
@@ -473,12 +493,12 @@ eval exec "$FD>$LOCKFILE"
 flock -n $FD || { Say "$VER Check WAN monitor ALREADY running...ABORTing"; exit; }		# v1.15
 
 #if [ "$QUIET" != "quiet" ];then
-# If count is divisible by 5, log the message
-if [ $((COUNT % 5)) -eq 0 ]; then
+# If count is divisible by 10, log the message
+if [ $((COUNT % 10)) -eq 0 ]; then
 	echo -e $cBMAG
 	sleep 1
 	echo -e $(date)" Check WAN Monitor started.....PID="$$ >> $LOCKFILE
-	Say $VER $TS $COUNT "Monitoring" $WAN_NAME $WAN_INDEX $DEV_TXT "connection using" $TXT "(Tries="$TRIES")" "(Action="$ACTION")"
+	Say $VER $TS $COUNT $FAILTIMESCOUNT "Monitoring" $WAN_NAME $WAN_INDEX $DEV_TXT "connection using" $TXT "(Tries="$TRIES")" "(Action="$ACTION")"
 fi
 
 # Update the counter file
@@ -513,7 +533,7 @@ while [ $FAIL_CNT -lt $MAX_FAIL_CNT ]; do
 						METHOD="using cURL data IP retrieval method"
 					fi
 				fi
-				Say $VER $TS $COUNT "Monitoring" $WAN_NAME $WAN_INDEX $DEV_TXT "connection" $METHOD "check FAILED"  $(($FAIL_CNT+1)) "out of" $TRIES "(Action="$ACTION")" "("$TXT")"
+				Say $VER $TS $COUNT $FAILTIMESCOUNT "Monitoring" $WAN_NAME $WAN_INDEX $DEV_TXT "connection" $METHOD "check FAILED"  $(($FAIL_CNT+1)) "out of" $TRIES "(Action="$ACTION")" "("$TXT")"
 				echo -e								# v1.14
 			fi
 		fi
@@ -589,6 +609,16 @@ while [ $FAIL_CNT -lt $MAX_FAIL_CNT ]; do
 
 done
 
+# Failure after $INTERVAL_ALL_FAILED_SECS*$MAX_FAIL_CNT secs ?
+FAILTIMESCOUNT=$((FAILTIMESCOUNT + 1))
+# Update the counter file
+echo $FAILTIMESCOUNT > "$FAILTIMES_FILE"
+
+if [ $FAILTIMESCOUNT -gt 3 ] ; then 
+	ACTION="REBOOT"
+	Say "$VER $TS $COUNT $FAILTIMESCOUNT > 3, Setting Action to REBOOT" 
+fi
+
 # Was 'noaction' specified ?									# v1.08
 if [ "$(echo $@ | grep -cw 'noaction')" -gt 0 ];then
 	echo -en $cRESET
@@ -597,7 +627,7 @@ if [ "$(echo $@ | grep -cw 'noaction')" -gt 0 ];then
 fi
 
 echo -e $cBYEL"\a"
-# Failure after $INTERVAL_ALL_FAILED_SECS*$MAX_FAIL_CNT secs ?
+
 if [ "$ACTION" == "WANONLY" ];then
 	Say "$TS Renewing DHCP and restarting" $WAN_NAME $WAN_INDEX "(Action="$ACTION")"
 	killall -USR1 udhcpc
