@@ -394,6 +394,9 @@ if [ -n "$1" ];then
                 CRON_SPEC=$(echo "$@" | sed -n "s/^.*cron=//p" | awk '{print $0}')
                 PRE_CRON=$(echo "$@" | sed 's/\(.*\)cron=.*/\1/')
                 cru d WAN_Check
+                Say "CHKWAN DEBUG: $@"
+                Say "CHKWAN DEBUG: cronspec $CRON_SPEC"
+                Say "CHKWAN DEBUG: precron $PRE_CRON"
                 if [ -z "$CRON_SPEC" ];then
                         cru a WAN_Check "*/30 * * * * /jffs/scripts/$SNAME wan nowait once"             # Every 30 mins on the half hour v1.15
                 else
@@ -401,11 +404,11 @@ if [ -n "$1" ];then
                         cru a WAN_Check "$(echo $CRON_SPEC | tr -d '\') /jffs/scripts/$SNAME $PRE_CRON "
                         #cru a WAN_Check "$(echo $CRON_SPEC | tr -d '\') /jffs/scripts/$SNAME wan nowait "
                 fi
-                CRONJOB=$(cru l | grep "$0")
-        SayT "ChkWAN scheduled by cron" "(Action="$ACTION")"
-        echo -en $cBCYA"\n\tChkWAN scheduled by cron (Action=$ACTION) \n\n\t"$cBGRE
-                cru l | grep $0
-                cru l | grep $0 >>/tmp/syslog.log
+                CRONJOB=$(cru l | grep "WAN_Check")
+                SayT "ChkWAN scheduled by cron $CRONJOB " "(Action="$ACTION")"
+                echo -en $cBCYA"\n\tChkWAN scheduled by cron $CRONJOB (Action=$ACTION) \n\n\t"$cBGRE
+                cru l | grep "WAN_Check"
+                #cru l | grep "WAN_Check" >>/tmp/syslog.log
                 echo -e $cRESET
         fi
 
@@ -651,4 +654,6 @@ fi
 
 flock -u $FD                            # v1.15
 echo -e $cRESET"\n"
+
+
 
