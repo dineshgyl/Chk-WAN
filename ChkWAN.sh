@@ -408,7 +408,7 @@ if [ -n "$1" ];then
                 SayT "ChkWAN scheduled by cron $CRONJOB " "(Action="$ACTION")"
                 echo -en $cBCYA"\n\tChkWAN scheduled by cron $CRONJOB (Action=$ACTION) \n\n\t"$cBGRE
                 cru l | grep "WAN_Check"
-                #cru l | grep "WAN_Check" >>/tmp/syslog.log
+                cru l | grep "WAN_Check" >>/tmp/syslog.log
                 echo -e $cRESET
         fi
 
