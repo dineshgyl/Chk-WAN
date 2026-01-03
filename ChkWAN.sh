@@ -74,6 +74,7 @@ TS=$(date "+%Y%m%d%H%M%S")
 # Define the counter file
 COUNTER_FILE="/tmp/$(basename $0).ctr"
 FAILTIMES_FILE="/tmp/$(basename $0).fail.times"
+LOGMSG=0
 
 # Check if counter file exists, if not, create it with value 0
 if [ ! -f "$COUNTER_FILE" ]; then
@@ -498,6 +499,7 @@ flock -n $FD || { Say "$VER Check WAN monitor ALREADY running...ABORTing"; exit;
 #if [ "$QUIET" != "quiet" ];then
 # If count is divisible by 140, log the message
 if [ $((COUNT % 140)) -eq 0 ]; then
+		LOGMSG=1
         echo -e $cBMAG
         sleep 1
         echo -e $(date)" Check WAN Monitor started.....PID="$$ >> $LOCKFILE
@@ -582,7 +584,9 @@ while [ $FAIL_CNT -lt $MAX_FAIL_CNT ]; do
                 else
                         # Should we RESET the cron i.e. ChkWAN_Reset_CRON.sh for Restart_WAN/Reboot_WAN (e.g. 2xWAN,3rd Reboot)
                         if [ "$QUIET" != "quiet" ];then
-                                Say "$VER $TS $COUNT $FAILTIMESCOUNT Monitoring" $WAN_NAME $WAN_INDEX $DEV_TXT "connection OK.....("$TXT"); Terminating due to ACTIVE cron schedule"
+								if [ $LOGMSG -eq 1 ]; then
+									Say "$VER $TS $COUNT $FAILTIMESCOUNT Monitoring" $WAN_NAME $WAN_INDEX $DEV_TXT "connection OK.....("$TXT"); Terminating due to ACTIVE cron schedule"
+								fi
                                 if [ -n "$(cru l | grep -oE "${SNAME}.*Restart_WAN")" ] &&  [ -n "$(cru l | grep -oE "${SNAME}.*Reboot_WAN")" ];then
                                         [ -f /jffs/scripts/ChkWAN_Reset_CRON.sh ] &&  /jffs/scripts/ChkWAN_Reset_CRON.sh        # v1.15
                                 fi
