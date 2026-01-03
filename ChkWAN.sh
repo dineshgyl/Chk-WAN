@@ -546,11 +546,11 @@ while [ $FAIL_CNT -lt $MAX_FAIL_CNT ]; do
 
         if [ $UP -gt 0 ]; then
                 FAIL_CNT=0
-				if [ $FAILTIMESCOUNT -gt 0 ] ; then
-					Say "$VER $TS $COUNT $FAILTIMESCOUNT > 0 Resetting FAILTIMESCOUNT to 0 in $FAILTIMES_FILE as internet check is success."
-					FAILTIMESCOUNT=0;
-					echo $FAILTIMESCOUNT > "$FAILTIMES_FILE"
-				fi
+                if [ $FAILTIMESCOUNT -gt 0 ] ; then
+                    Say "$VER $TS $COUNT $FAILTIMESCOUNT > 0 Resetting FAILTIMESCOUNT to 0 in $FAILTIMES_FILE as internet check is success."
+                    FAILTIMESCOUNT=0;
+                    echo $FAILTIMESCOUNT > "$FAILTIMES_FILE"
+                fi
                 echo -e $cBGRE
                 TXT="Successful ping to '"$TARGET"'"
                 if [ "$HOSTS" == "CURL CURL" ];then
@@ -583,14 +583,15 @@ while [ $FAIL_CNT -lt $MAX_FAIL_CNT ]; do
                         fi
                 else
                         # Should we RESET the cron i.e. ChkWAN_Reset_CRON.sh for Restart_WAN/Reboot_WAN (e.g. 2xWAN,3rd Reboot)
+                        if [ $LOGMSG -eq 1 ]; then
+                            Say "$VER $TS $COUNT $FAILTIMESCOUNT Monitoring" $WAN_NAME $WAN_INDEX $DEV_TXT "connection OK.....("$TXT"); Terminating due to ACTIVE cron schedule (LOGMSG=1)"
+                        fi
                         if [ "$QUIET" != "quiet" ];then
-								if [ $LOGMSG -eq 1 ]; then
-									Say "$VER $TS $COUNT $FAILTIMESCOUNT Monitoring" $WAN_NAME $WAN_INDEX $DEV_TXT "connection OK.....("$TXT"); Terminating due to ACTIVE cron schedule"
-								fi
-                                if [ -n "$(cru l | grep -oE "${SNAME}.*Restart_WAN")" ] &&  [ -n "$(cru l | grep -oE "${SNAME}.*Reboot_WAN")" ];then
-                                        [ -f /jffs/scripts/ChkWAN_Reset_CRON.sh ] &&  /jffs/scripts/ChkWAN_Reset_CRON.sh        # v1.15
-                                fi
-                                echo -e $cRESET
+                            Say "$VER $TS $COUNT $FAILTIMESCOUNT Monitoring" $WAN_NAME $WAN_INDEX $DEV_TXT "connection OK.....("$TXT"); Terminating due to ACTIVE cron schedule"
+                            if [ -n "$(cru l | grep -oE "${SNAME}.*Restart_WAN")" ] &&  [ -n "$(cru l | grep -oE "${SNAME}.*Reboot_WAN")" ];then
+                               [ -f /jffs/scripts/ChkWAN_Reset_CRON.sh ] &&  /jffs/scripts/ChkWAN_Reset_CRON.sh        # v1.15
+                            fi
+                            echo -e $cRESET
                         fi
                         flock -u $FD                                            # v1.15
                         exit 0
@@ -663,5 +664,4 @@ fi
 
 flock -u $FD                            # v1.15
 echo -e $cRESET"\n"
-
 
