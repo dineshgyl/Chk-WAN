@@ -543,7 +543,12 @@ while [ $FAIL_CNT -lt $MAX_FAIL_CNT ]; do
         done
 
         if [ $UP -gt 0 ]; then
-        FAIL_CNT=0
+                FAIL_CNT=0
+				if [ $FAILTIMESCOUNT -gt 0 ] ; then
+					Say "$VER $TS $COUNT $FAILTIMESCOUNT > 0 Resetting FAILTIMESCOUNT to 0 in $FAILTIMES_FILE as internet check is success."
+					FAILTIMESCOUNT=0;
+					echo $FAILTIMESCOUNT > "$FAILTIMES_FILE"
+				fi
                 echo -e $cBGRE
                 TXT="Successful ping to '"$TARGET"'"
                 if [ "$HOSTS" == "CURL CURL" ];then
@@ -587,7 +592,7 @@ while [ $FAIL_CNT -lt $MAX_FAIL_CNT ]; do
                         exit 0
                 fi
         else
-            FAIL_CNT=$((FAIL_CNT+1))
+                FAIL_CNT=$((FAIL_CNT+1))
                 if [ $FAIL_CNT -ge $MAX_FAIL_CNT ];then
                         break
                 fi
@@ -654,6 +659,5 @@ fi
 
 flock -u $FD                            # v1.15
 echo -e $cRESET"\n"
-
 
 
