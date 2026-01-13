@@ -497,15 +497,15 @@ eval exec "$FD>$LOCKFILE"
 flock -n $FD || { Say "$VER Check WAN monitor ALREADY running...ABORTing"; exit; }              # v1.15
 
 #if [ "$QUIET" != "quiet" ];then
-# If count is divisible by 140, log the message
-if [ $((COUNT % 140)) -eq 0 ]; then
-		LOGMSG=1
         echo -e $cBMAG
         sleep 1
-        echo -e $(date)" Check WAN Monitor started.....PID="$$ >> $LOCKFILE
+		echo -e $(date)" Check WAN Monitor started.....PID="$$ >> $LOCKFILE
+# If count is divisible by 160, log the message every 9 mins ==> 1440/9 ==> 
+if [ $((COUNT % 160)) -eq 0 ]; then
+		LOGMSG=1
         Say $VER $TS $COUNT $FAILTIMESCOUNT "Monitoring" $WAN_NAME $WAN_INDEX $DEV_TXT "connection using" $TXT "(Tries="$TRIES")" "(Action="$ACTION")"
 fi
-
+#fi
 # Update the counter file
 echo $COUNT > "$COUNTER_FILE"
 
@@ -664,4 +664,3 @@ fi
 
 flock -u $FD                            # v1.15
 echo -e $cRESET"\n"
-
