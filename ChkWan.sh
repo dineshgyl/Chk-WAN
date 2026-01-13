@@ -1,6 +1,6 @@
 #!/bin/sh
-VER="v1.18"
-#============================================================================================ © 2016-2021 Martineau v1.18
+VER="v1.17"
+#============================================================================================ © 2016-2021 Martineau v1.17
 #
 # Monitor WAN connection state using PINGs to multiple hosts, or a single cURL 15 Byte data request and optionally a 10MB/500B WGET/CURL data transfer.
 #         NOTE: The cURL data transfer rate/perfomance threshold may also be checked e.g. to switch from a 'slow' (Dual) WAN interface.
@@ -56,34 +56,13 @@ VER="v1.18"
 #      but /jffs/scripts/ChkWAN_Reset_CRON.sh can change after very successful WAN UP check (Syslog monitor is better!!!?)
 #               cru a Restart_WAN 28,38,58,8 * * * * /jffs/scripts/ChkWAN.sh wan force nowait
 #               cru a Reboot_WAN 48,18 * * * * /jffs/scripts/ChkWAN.sh reboot force nowait
-#
-# Cron Schedule will take all the parms to the script preceed by cron= 
-#      sh /jffs/scripts/ChkWAN.sh wan nowait cron="\*/2 \* \* \* \*" &
-
 
 
 
 # [URL="https://www.snbforums.com/threads/need-a-script-that-auto-reboot-if-internet-is-down.43819/#post-371791"]Need a script that auto reboot if internet is down[/URL]
 
-TS=$(date "+%Y%m%d%H%M%S")
-# Define the counter file
-COUNTER_FILE="/tmp/$(basename $0).ctr"
-
-# Check if counter file exists, if not, create it with value 0
-if [ ! -f "$COUNTER_FILE" ]; then
-    echo 0 > "$COUNTER_FILE"
-fi
-
-# Read the current count
-COUNT=$(cat "$COUNTER_FILE")
-
-# Increment the counter
-COUNT=$((COUNT + 1))
-
-
 ShowHelp() {
-	#awk '/^#==/{f=1} f{print; if (!NF) exit}' $0
-	awk '/^#==/{flag=1; next} flag && /^$/ {exit} flag' "$0"
+	awk '/^#==/{f=1} f{print; if (!NF) exit}' $0
 }
 # shellcheck disable=SC2034
 ANSIColours() {
@@ -378,19 +357,17 @@ if [ -n "$1" ];then
 
 	if [ "$(echo "$@" | grep -c 'cron')" -gt 0 ];then				# v1.15
 		CRON_SPEC=$(echo "$@" | sed -n "s/^.*cron=//p" | awk '{print $0}')
-		PRE_CRON=$(echo "$@" | sed 's/\(.*\)cron=.*/\1/')   
 		cru d WAN_Check
 		if [ -z "$CRON_SPEC" ];then
 			cru a WAN_Check "*/30 * * * * /jffs/scripts/$SNAME wan nowait once"		# Every 30 mins on the half hour v1.15
 		else
 			[ $(echo $CRON_SPEC | wc -w) -eq 1 ] && CRON_SPEC=$CRON_SPEC" \* \* \* \*"		# Allow just the Minutes argument
-			cru a WAN_Check "$(echo $CRON_SPEC | tr -d '\') /jffs/scripts/$SNAME $PRE_CRON "
-			#cru a WAN_Check "$(echo $CRON_SPEC | tr -d '\') /jffs/scripts/$SNAME wan nowait "
+			cru a WAN_Check "$(echo $CRON_SPEC | tr -d '\') /jffs/scripts/$SNAME"
 		fi
 		CRONJOB=$(cru l | grep "$0")
-        SayT "ChkWAN scheduled by cron" "(Action="$ACTION")"
-        echo -en $cBCYA"\n\tChkWAN scheduled by cron (Action=$ACTION) \n\n\t"$cBGRE
- 		cru l | grep $0
+		SayT "ChkWAN scheduled by cron"
+		echo -en $cBCYA"\n\tChkWAN scheduled by cron\n\n\t"$cBGRE
+		cru l | grep $0
 		cru l | grep $0 >>/tmp/syslog.log
 		echo -e $cRESET
 	fi
@@ -426,9 +403,9 @@ fi
 
 # Help request ?
 if [ "$1" == "help" ] || [ "$1" == "-h" ];then
-	#echo -e $cBWHT
+	echo -e $cBWHT
 	ShowHelp							# Show help
-	#echo -e $cRESET
+	echo -e $cRESET
 	exit 0
 fi
 
@@ -458,7 +435,7 @@ FAIL_CNT=0
 
 if [ "$(echo $@ | grep -cw 'nowait')" -eq 0 ] && [ "$QUIET" != "quiet" ];then
 	echo -e $cBCYA
-	Say  $VER $TS $WAN_NAME "connection status monitoring will begin in" $INTERVAL_ALL_FAILED_SECS "seconds....."
+	Say  $VER $WAN_NAME "connection status monitoring will begin in" $INTERVAL_ALL_FAILED_SECS "seconds....."
 	sleep $INTERVAL_ALL_FAILED_SECS
 fi
 
@@ -473,20 +450,16 @@ eval exec "$FD>$LOCKFILE"
 flock -n $FD || { Say "$VER Check WAN monitor ALREADY running...ABORTing"; exit; }		# v1.15
 
 #if [ "$QUIET" != "quiet" ];then
-# If count is divisible by 30, log the message
-if [ $((COUNT % 30)) -eq 0 ]; then
 	echo -e $cBMAG
 	sleep 1
 	echo -e $(date)" Check WAN Monitor started.....PID="$$ >> $LOCKFILE
-	Say $VER $TS $COUNT "Monitoring" $WAN_NAME $WAN_INDEX $DEV_TXT "connection using" $TXT "(Tries="$TRIES")" "(Action="$ACTION")"
-fi
+	Say $VER "Monitoring" $WAN_NAME $DEV_TXT "connection using" $TXT "(Tries="$TRIES")"
+#fi
 
-# Update the counter file
-echo $COUNT > "$COUNTER_FILE"
 
 if [ "$QUIET" != "quiet" ];then
 	echo -en $cBWHT
-	Say "$TS Monitoring pass" $(($FAIL_CNT+1)) "out of" $TRIES
+	Say "Monitoring pass" $(($FAIL_CNT+1)) "out of" $TRIES
 fi
 
 while [ $FAIL_CNT -lt $MAX_FAIL_CNT ]; do
@@ -513,7 +486,7 @@ while [ $FAIL_CNT -lt $MAX_FAIL_CNT ]; do
 						METHOD="using cURL data IP retrieval method"
 					fi
 				fi
-				Say $VER $TS $COUNT "Monitoring" $WAN_NAME $WAN_INDEX $DEV_TXT "connection" $METHOD "check FAILED"  $(($FAIL_CNT+1)) "out of" $TRIES "(Action="$ACTION")" "("$TXT")"
+				Say $VER "Monitoring" $WAN_NAME $DEV_TXT "connection" $METHOD "check FAILED"
 				echo -e								# v1.14
 			fi
 		fi
@@ -539,14 +512,14 @@ while [ $FAIL_CNT -lt $MAX_FAIL_CNT ]; do
 		if [ -z "$(cru l | grep "$SNAME")" ];then
 			if [ -z "$ONCE" ];then
 				if [ "$QUIET" != "quiet" ];then
-					Say "$TS Monitoring" $WAN_NAME $WAN_INDEX  $DEV_TXT "connection OK.....("$TXT"). Will check" $WAN_NAME "again in" $INTERVAL_SECS "secs"
+					Say "Monitoring" $WAN_NAME $DEV_TXT "connection OK.....("$TXT"). Will check" $WAN_NAME "again in" $INTERVAL_SECS "secs"
 					echo -en $cRESET
 				fi
 
 				sleep $INTERVAL_SECS
 
 			else
-				Say "$TS Monitoring" $WAN_NAME $WAN_INDEX  $DEV_TXT "connection OK.....("$TXT")."
+				Say "Monitoring" $WAN_NAME $DEV_TXT "connection OK.....("$TXT")."
 				echo -en $cRESET
 				flock -u $FD							# v1.15
 				exit 0
@@ -554,7 +527,7 @@ while [ $FAIL_CNT -lt $MAX_FAIL_CNT ]; do
 		else
 			# Should we RESET the cron i.e. ChkWAN_Reset_CRON.sh for Restart_WAN/Reboot_WAN (e.g. 2xWAN,3rd Reboot)
 			if [ "$QUIET" != "quiet" ];then
-				Say "$TS Monitoring" $WAN_NAME $WAN_INDEX $DEV_TXT "connection OK.....("$TXT"); Terminating due to ACTIVE cron schedule"
+				Say "Monitoring" $WAN_NAME $DEV_TXT "connection OK.....("$TXT"); Terminating due to ACTIVE cron schedule"
 				if [ -n "$(cru l | grep -oE "${SNAME}.*Restart_WAN")" ] &&  [ -n "$(cru l | grep -oE "${SNAME}.*Reboot_WAN")" ];then
 					[ -f /jffs/scripts/ChkWAN_Reset_CRON.sh ] &&  /jffs/scripts/ChkWAN_Reset_CRON.sh	# v1.15
 				fi
@@ -564,7 +537,7 @@ while [ $FAIL_CNT -lt $MAX_FAIL_CNT ]; do
 			exit 0
 		fi
 	else
-	    FAIL_CNT=$((FAIL_CNT+1))
+	FAIL_CNT=$((FAIL_CNT+1))
 		if [ $FAIL_CNT -ge $MAX_FAIL_CNT ];then
 			break
 		fi
@@ -572,7 +545,7 @@ while [ $FAIL_CNT -lt $MAX_FAIL_CNT ]; do
 
 		if [ "$QUIET" != "quiet" ];then
 			echo -e $cBWHT
-			Say "$TS Monitoring pass" $(($FAIL_CNT+1)) "out of" $TRIES
+			Say "Monitoring pass" $(($FAIL_CNT+1)) "out of" $TRIES
 		fi
 		echo -en $cRESET
 	fi
@@ -599,7 +572,7 @@ fi
 echo -e $cBYEL"\a"
 # Failure after $INTERVAL_ALL_FAILED_SECS*$MAX_FAIL_CNT secs ?
 if [ "$ACTION" == "WANONLY" ];then
-	Say "$TS Renewing DHCP and restarting" $WAN_NAME $WAN_INDEX "(Action="$ACTION")"
+	Say "Renewing DHCP and restarting" $WAN_NAME "(Action="$ACTION")"
 	killall -USR1 udhcpc
 	sleep 10
 	if [ -z "$WAN_INDEX" ];then
@@ -614,7 +587,7 @@ if [ "$ACTION" == "WANONLY" ];then
 
 else
 	echo -e ${cBRED}$aBLINK"\a\n\n\t"
-	Say "$TS Rebooting..... (Action="$ACTION")"
+	Say "Rebooting..... (Action="$ACTION")"
 	echo -e "\n\t\t**********Rebooting**********\n\n"$cBGRE
 	service start_reboot							# Default REBOOT
 fi
